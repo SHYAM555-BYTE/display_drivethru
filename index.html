@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riverside Cruise-In — Tobacco Prices</title>
+
+<!-- Fonts: Bebas Neue (display), Oswald (labels), Archivo (prices) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;700&family=Archivo:wght@800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    /* ---------- NIGHT NEON THEME (high visibility from a car) ---------- */
+    --bg-1:#0b1526;             /* deep midnight navy            */
+    --bg-2:#12233d;             /* lighter navy                  */
+    --card:#f4f7fb;             /* near-white cards for banners  */
+    --amber:#ffb703;            /* glowing amber                 */
+    --red:#ff3b4e;              /* electric red                  */
+    --cyan:#37c4f5;             /* accent blue                   */
+    --ink:#eef3fa;
+    --panel-blue-1:#2f7ce0;
+    --panel-blue-2:#0a3d8f;
+    --row-gap:1vh;
+
+    --brand-img-h:10vh;         /* auto-set by script            */
+
+    --font-display:"Bebas Neue", "Arial Narrow", Arial, sans-serif;
+    --font-label:"Oswald", "Arial Narrow", Arial, sans-serif;
+    --font-price:"Archivo", Arial, Helvetica, sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(circle at 80% 0%, rgba(55,196,245,.12), transparent 45%),
+      radial-gradient(circle at 15% 100%, rgba(255,183,3,.10), transparent 50%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-2));
+    font-family:var(--font-label);
+    overflow:hidden;
+    color:var(--ink);
+  }
+
+  .board{
+    display:grid;
+    grid-template-columns: 24vw 1fr;
+    width:100vw;
+    height:100vh;
+    gap:0.8vw;
+    padding:1vh 0.8vw;
+  }
+
+  /* ---------- LEFT PROMO PANEL ---------- */
+  /* ---------- SLIDESHOW ---------- */
+  .slide-stage{
+    position:relative;
+    flex:1;
+    width:100%;
+    min-height:0;
+    margin-bottom:1vh;
+  }
+  .slide{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding-top:1vh;
+    gap:2vh;
+    opacity:0;
+    transform:scale(.97);
+    transition:opacity .8s ease, transform .8s ease;
+    pointer-events:none;
+  }
+  .slide img{
+    width:100%;
+    max-height:62vh;
+    object-fit:cover;        /* fills the width, crops a touch of blur if needed */
+    border-radius:1.5vh;
+    filter:drop-shadow(0 1vh 2.5vh rgba(0,0,0,.5));
+  }
+  
+  .slide.active{
+    opacity:1;
+    transform:scale(1);
+  }
+  .slide .slide-name{
+    font-family:var(--font-display);
+    font-size:7vh;
+    letter-spacing:.08em;
+    color:#fff;
+    text-shadow:0 0 2.5vh rgba(255,255,255,.4);
+    text-align:center;
+    line-height:1;
+  }
+  .slide .slide-deal{
+    font-family:var(--font-display);
+    font-size:4.5vh;
+    color:var(--amber);
+    text-shadow:0 0 2vh rgba(255,183,3,.7);
+    letter-spacing:.05em;
+    text-align:center;
+    line-height:1.1;
+  }
+  .slide .slide-deal small{
+    display:block;
+    font-family:var(--font-label);
+    font-size:2vh;
+    color:#fff;
+    font-weight:500;
+    margin-top:0.6vh;
+  }
+  /* Little progress dots */
+  .slide-dots{
+    display:flex;
+    gap:0.5vw;
+    justify-content:center;
+    margin-bottom:1.2vh;
+  }
+  .slide-dots span{
+    width:1.2vh;
+    height:1.2vh;
+    border-radius:50%;
+    background:rgba(255,255,255,.25);
+    transition:background .3s, transform .3s;
+  }
+  .slide-dots span.on{
+    background:var(--amber);
+    transform:scale(1.3);
+    box-shadow:0 0 1vh rgba(255,183,3,.7);
+  }
+
+  /* Panel: solid color that the JS fades per brand */
+  .promo{
+    position:relative;
+    background-color:#0a3d8f;               /* JS changes this per slide */
+    transition:background-color 1.2s ease;
+    border-radius:1vw;
+    box-shadow:0 0 3vh rgba(55,196,245,.35);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:space-between;
+    padding:2vh 1vw;
+    text-align:center;
+    color:#fff;
+    overflow:hidden;
+  }
+  .promo::before{                            /* subtle depth overlay */
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(160deg, rgba(255,255,255,.10), rgba(0,0,0,.35) 80%);
+    pointer-events:none;
+  }
+  .promo > *{position:relative; z-index:1;}
+
+  .promo .packs{
+    display:flex;
+    gap:0.6vw;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .promo .packs img{
+    width:5.5vw;
+    height:auto;
+    max-height:19vh;
+    object-fit:contain;
+    filter:drop-shadow(0 0.8vh 1vh rgba(0,0,0,.4));
+  }
+  .pack{
+    width:5.5vw;
+    height:16vh;
+    border-radius:0.4vw;
+    box-shadow:0 0.8vh 1.5vh rgba(0,0,0,.45);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    font-weight:bold;
+    font-size:1.1vh;
+    padding-bottom:1vh;
+    color:#fff;
+    letter-spacing:.05em;
+  }
+  .pack.menthol{background:linear-gradient(180deg,#0f7a4d,#0a5c39);}
+  .pack.red{background:linear-gradient(180deg,#ff3b4e,#8f0b20); height:19vh;}
+  .pack.gold{background:linear-gradient(180deg,#d8c9a3,#b7a274); color:#4a3d20;}
+
+  .promo .brand-name{
+    font-family:var(--font-display);
+    font-size:9vh;
+    letter-spacing:.06em;
+    text-shadow:0 0 2vh rgba(255,255,255,.4);
+  }
+  .promo .save{
+    font-family:var(--font-display);
+    font-size:6.2vh;
+    color:var(--amber);
+    text-shadow:0 0 2.5vh rgba(255,183,3,.7);
+    line-height:1;
+    letter-spacing:.04em;
+  }
+  .promo .save small{
+    display:block;
+    font-family:var(--font-label);
+    font-size:2.3vh;
+    color:#fff;
+    font-weight:500;
+    margin-top:1vh;
+  }
+  .rewards{
+    background:#fff;
+    color:var(--panel-blue-1);
+    border-radius:1.5vh;
+    padding:1.2vh 1.4vw;
+    font-weight:700;
+    font-size:2.2vh;
+    line-height:1.15;
+    box-shadow:0 0.5vh 1.5vh rgba(0,0,0,.35);
+  }
+  .rewards span{color:#e63946;}
+  .warning-left{
+    background:#fff;
+    color:#000;
+    font-family:Arial, sans-serif;
+    font-size:1.15vh;
+    font-weight:bold;
+    text-transform:uppercase;
+    padding:0.8vh 0.6vw;
+    border:0.15vh solid #000;
+    border-radius:0.6vh;
+    line-height:1.25;
+    text-align:left;
+  }
+  /* ---------- RIGHT PRICE GRID ---------- */
+  .pricelist{
+    display:flex;
+    flex-direction:column;
+    background:rgba(255,255,255,.04);
+    border:0.15vh solid rgba(255,255,255,.12);
+    border-radius:1vw;
+    padding:1vh 1vw;
+    height:100%;
+    min-height:0;
+  }
+
+  /* Header: store name CENTERED on top, column labels below */
+  .list-header{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding-bottom:0.6vh;
+    margin-bottom:0.8vh;
+    border-bottom:0.4vh solid;
+    border-image:linear-gradient(90deg,var(--red),var(--amber),var(--cyan)) 1;
+  }
+  .logo{
+    font-family:var(--font-display);
+    font-size:6vh;
+    letter-spacing:.08em;
+    text-align:center;
+    color:#fff;
+    text-shadow:0 0 2.5vh rgba(55,196,245,.6);
+    line-height:1;
+  }
+  .logo .fly{color:var(--amber); text-shadow:0 0 2.5vh rgba(255,183,3,.6);}
+  .logo img{height:6vh; width:auto; object-fit:contain;}
+
+  .col-labels{
+    display:grid;
+    grid-template-columns: 1fr 13vw 13vw;
+    width:100%;
+    margin-top:0.6vh;
+  }
+  .col-label{
+    text-align:center;
+    font-family:var(--font-label);
+    font-weight:500;
+    font-size:1.7vh;
+    line-height:1.2;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#9db4d0;
+  }
+  .col-label u{
+    display:block;
+    text-decoration:none;
+    font-weight:700;
+    font-size:2.6vh;
+    letter-spacing:.12em;
+  }
+  .col-label.two u{color:var(--red); text-shadow:0 0 1.5vh rgba(255,59,78,.55);}
+  .col-label.one u{color:var(--amber); text-shadow:0 0 1.5vh rgba(255,183,3,.55);}
+
+  .rows{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:var(--row-gap);
+    min-height:0;
+  }
+  .row{
+    flex:1 1 0;
+    min-height:0;
+    overflow:hidden;
+    display:grid;
+    grid-template-columns: 1fr 13vw 13vw;
+    align-items:center;
+    background:var(--card);
+    border-radius:1.2vh;
+    box-shadow:0 0.5vh 2vh rgba(0,0,0,.45);
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:0;
+    height:100%;
+    font-family:var(--font-display);
+    letter-spacing:.08em;
+    font-size:3.2vh;
+    color:#111;
+    padding:0.2vh 0.2vw;
+    white-space:nowrap;
+    overflow:hidden;
+    border-radius:1.2vh 0 0 1.2vh;
+  }
+  /* All images: identical forced size, filling the box */
+  .brand img{
+    width:100%;
+    height:var(--brand-img-h);
+    object-fit:fill;
+    display:block;
+    border-radius:1vh;
+  }
+
+  /* GLOWING PRICE PILLS — big and readable from a car */
+  .price{
+    justify-self:center;
+    font-family:var(--font-price);
+    font-weight:900;
+    font-size:3.6vh;
+    font-variant-numeric:tabular-nums;
+    padding:0.9vh 1.4vw;
+    border-radius:99vh;
+    color:#fff;
+  }
+  .price.buy-two{
+    background:linear-gradient(160deg,var(--red),#b3202c);
+    box-shadow:0 0 2vh rgba(255,59,78,.55);
+  }
+  .price.buy-one{
+    background:linear-gradient(160deg,#0e3f73,#0a2c50);
+    border:0.2vh solid var(--cyan);
+    box-shadow:0 0 1.6vh rgba(55,196,245,.35);
+  }
+
+  /* Text fallback colors (used only when an image is missing) */
+  .marlboro        {background:#fff;color:#e63946;border:0.2vh solid #e63946;}
+  .special-select  {background:linear-gradient(180deg,#7a1f1f,#5c1414);color:#f4e3b2;}
+  .marlboro-black  {background:#111;color:#fff;}
+  .camel           {background:linear-gradient(180deg,#2e6fbd,#1c4f8f);color:#f7e7b6;}
+  .newport         {background:#fff;color:#00843d;border:0.2vh solid #00843d;}
+  .winston         {background:linear-gradient(180deg,#b01c22,#7e1116);color:#fff;}
+  .lm              {background:linear-gradient(90deg,#b01c22,#e8e8e8 55%,#1c4f8f);color:#111;}
+  .LD              {background:linear-gradient(90deg,#b01c22,#e8e8e8 55%,#1c4f8f);color:#111;}
+  .montego         {background:linear-gradient(90deg,#f0c419,#0a7a3d);color:#fff;}
+  .doral           {background:linear-gradient(180deg,#2f7ce0,#0a3d8f);color:#fff;}
+  .american-spirit {background:linear-gradient(180deg,#2b2b2b,#111);color:#e8c477;}
+  .grizzly         {background:#111;color:#e02b2b;letter-spacing:.15em;}
+
+  .warning-strip{
+    margin-top:1vh;
+    background:#fff;
+    color:#000;
+    border:0.2vh solid #000;
+    border-radius:0.8vh;
+    font-family:Arial, sans-serif;
+    font-size:1.3vh;
+    font-weight:bold;
+    text-transform:uppercase;
+    padding:0.7vh 0.8vw;
+    text-align:center;
+  }
+
+  @media (max-aspect-ratio: 4/5){
+    body{overflow:auto;}
+    .board{grid-template-columns:1fr;height:auto;}
+    .promo{min-height:40vh;}
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <!-- LEFT: brand slideshow -->
+  <aside class="promo">
+    <div class="slide-stage" id="slideStage"></div>
+  </aside>
+
+  <!-- RIGHT: price list -->
+  <main class="pricelist">
+    <div class="list-header">
+      <!-- CENTERED store name -->
+      <div class="logo">RIVERSIDE <span class="fly">CRUISE-IN</span></div>
+      <!-- Column labels sit under the name, aligned over the price columns -->
+      <div class="col-labels">
+        <div></div>
+        <div class="col-label two">Per pack when you<u>BUY TWO</u></div>
+        <div class="col-label one">Per pack when you<u>BUY ONE</u></div>
+      </div>
+    </div>
+
+    <div class="rows" id="rows"></div>
+
+    <div class="warning-strip">
+      Warning: This product contains nicotine. Nicotine is an addictive chemical.
+    </div>
+  </main>
+
+</div>
+
+<script>
+  /* ==========================================================
+     EDIT PRICES HERE — one line per brand:
+     [ name, cssClass, buyTwo, buyOne, imagePath ]
+     ========================================================== */
+  const BRANDS = [
+    ["Marlboro",                 "marlboro",         8.96, 10.31, "Images_Cig/marlboro_main_line.png"],
+    ["Marlboro Special Select",  "special-select",   8.96, 10.31, "Images_Cig/Marlboro_spslcted.png"],
+    ["Marlboro Black",           "marlboro-black",   5.40,  6.75, "Images_Cig/Marlboro_black.png"],
+    ["Basic",                    "marlboro",         5.35,  6.97, "Images_Cig/basic.png"],
+    ["L&D",                      "LD",              10.04, 10.14, "Images_Cig/LD_cig.png"],
+    ["Montego",                  "montego",          4.24,  5.39, "Images_Cig/montego.png"],
+    ["Sonoma",                   "winston",          5.31,  6.81, "Images_Cig/sonoma.jpg"],
+  ];
+
+  const rows = document.getElementById("rows");
+  const fmt = n => n.toFixed(2);
+
+  BRANDS.forEach(([name, cls, two, one, img]) => {
+    const row = document.createElement("div");
+    row.className = "row";
+
+    const brandCell = document.createElement("div");
+    brandCell.className = "brand";
+
+    if (img) {
+      const image = document.createElement("img");
+      image.src = img;
+      image.alt = name;
+      // Missing image file -> fall back to styled text bar
+      image.onerror = () => {
+        brandCell.classList.add(cls);
+        brandCell.textContent = name;
+        image.remove();
+        fitRows();
+      };
+      brandCell.appendChild(image);
+    } else {
+      brandCell.classList.add(cls);
+      brandCell.textContent = name;
+    }
+
+    const p2 = document.createElement("div");
+    p2.className = "price buy-two";
+    p2.textContent = fmt(two);
+
+    const p1 = document.createElement("div");
+    p1.className = "price buy-one";
+    p1.textContent = fmt(one);
+
+    row.append(brandCell, p2, p1);
+    rows.appendChild(row);
+  });
+
+  /* Sizes everything so ALL brands fit on one screen */
+  function fitRows(){
+    const count = BRANDS.length;
+
+    const imgH = (80 / count) * 0.88;
+    document.documentElement.style.setProperty("--brand-img-h", imgH + "vh");
+
+    const brandSize = Math.min(3.2, 36 / count) + "vh";
+    const priceSize = Math.min(3.6, 40 / count) + "vh";
+    document.querySelectorAll(".brand:not(:has(img))").forEach(el => el.style.fontSize = brandSize);
+    document.querySelectorAll(".price").forEach(el => el.style.fontSize = priceSize);
+  }
+  fitRows();
+  window.addEventListener("resize", fitRows);
+  /* ==========================================================
+     SLIDESHOW — one line per slide:
+     [ imagePath, bigName, dealLine, dealSubLine ]
+     (deal lines are optional — use "" to leave them off)
+     ========================================================== */
+/* [ imagePath, bigName, dealLine, dealSubLine, panelColor ] */
+const SLIDES = [
+    ["Left_Cig/marlboro_main_line.jpg", "MARLBORO",       "BUY 2 & SAVE $2.70", "8.96 per pack when you buy two", "#8f0b20"],  /* deep red    */
+    ["Left_Cig/Marlboro_spslcted.jpg",  "SPECIAL SELECT", "BUY 2 & SAVE $2.70", "8.96 per pack when you buy two", "#8a6d3b"],  /* rich gold   */
+    ["Left_Cig/marlboro_black.jpg",     "MARLBORO BLACK", "BUY 2 & SAVE $2.70", "5.40 per pack when you buy two", "#1c1c1e"],  /* black       */
+    ["Left_Cig/basic.jpg",              "BASIC",          "BUY 2 & SAVE $3.24", "5.35 per pack when you buy two", "#1e5e3a"],  /* forest green*/
+    ["Left_Cig/LD_cig.jpg",             "L.DUCAT",        "ONLY $10.04",        "per pack when you buy two",      "#4a3b2a"],  /* bronze      */
+    ["Left_Cig/montego.jpg",            "MONTEGO",        "BUY 2 & SAVE $2.30", "Just 4.24 per pack",             "#0a5c39"],  /* jungle green*/
+    ["Left_Cig/sonoma.jpg",             "SONOMA",         "BUY 2 & SAVE $3.00", "Just 5.31 per pack",             "#3d6e99"],  /* ice blue    */
+  ];
+  const SLIDE_SECONDS = 5;   // how long each slide stays up
+
+  const stage = document.getElementById("slideStage");
+  const promoPanel = document.querySelector(".promo");
+
+  SLIDES.forEach(([img, name, deal, sub, color], i) => {
+    const s = document.createElement("div");
+    s.className = "slide" + (i === 0 ? " active" : "");
+
+    if (img) {
+      const im = document.createElement("img");
+      im.src = img;
+      im.alt = name;
+      im.onerror = () => im.remove();
+      s.appendChild(im);
+    }
+    const n = document.createElement("div");
+    n.className = "slide-name";
+    n.textContent = name;
+    s.appendChild(n);
+
+    if (deal) {
+      const d = document.createElement("div");
+      d.className = "slide-deal";
+      d.innerHTML = deal + (sub ? "<small>" + sub + "</small>" : "");
+      s.appendChild(d);
+    }
+    stage.appendChild(s);
+
+  });
+
+  let cur = 0;
+  const slideEls = stage.querySelectorAll(".slide");
+
+  function setPanelColor(i){
+    promoPanel.style.backgroundColor = SLIDES[i][4] || "#0a3d8f";
+  }
+  setPanelColor(0);
+
+  setInterval(() => {
+    slideEls[cur].classList.remove("active");
+    cur = (cur + 1) % slideEls.length;
+    slideEls[cur].classList.add("active");
+    setPanelColor(cur);
+  }, SLIDE_SECONDS * 500);
+</script>
+</body>
+</html>
