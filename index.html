@@ -391,6 +391,41 @@
     .board{grid-template-columns:1fr;height:auto;}
     .promo{min-height:40vh;}
   }
+
+  /* ---------- FULLSCREEN BANNER TAKEOVER ---------- */
+  .banner-overlay{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    z-index:999;
+    background:#000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .9s ease;
+  }
+  .banner-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .banner-overlay img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    opacity:0;
+    transition:opacity .6s ease;
+  }
+  .banner-overlay img.on{
+    opacity:1;
+  }
+  .slide.no-transition{
+    transition:none !important;
+  }
 </style>
 </head>
 <body>
@@ -424,6 +459,12 @@
 
 </div>
 
+<!-- FULLSCREEN BANNER TAKEOVER (covers everything above) -->
+<div class="banner-overlay" id="bannerOverlay">
+  <img id="bannerImgA" src="" alt="banner">
+  <img id="bannerImgB" src="" alt="banner">
+</div>
+
 <script>
   /* ==========================================================
      EDIT PRICES HERE — one line per brand:
@@ -432,7 +473,7 @@
   const BRANDS = [
     ["Marlboro",                 "marlboro",         8.96, 10.31, "Images_Cig/marlboro_main_line.png"],
     ["Marlboro Special Select",  "special-select",   8.96, 10.31, "Images_Cig/Marlboro_spslcted.png"],
-    ["Marlboro Black",           "marlboro-black",   5.40,  6.75, "Images_Cig/Marlboro_black.png"],
+    ["Marlboro Black",           "marlboro-black",   5.40,  6.75, "Images_Cig/marlboro_black.png"],
     ["Basic",                    "marlboro",         5.35,  6.97, "Images_Cig/basic.png"],
     ["L&D",                      "LD",              10.04, 10.14, "Images_Cig/LD_cig.png"],
     ["Montego",                  "montego",          4.24,  5.39, "Images_Cig/montego.png"],
@@ -546,12 +587,131 @@ const SLIDES = [
   }
   setPanelColor(0);
 
-  setInterval(() => {
+  /* ==========================================================
+     FULLSCREEN BANNER TAKEOVER
+     One entry per banner image: [ imagePath, secondsToShow ]
+     After the left-side slideshow finishes ONE FULL CYCLE
+     (loops back to slide 1), we pause it, cover the WHOLE
+     screen with the banner(s), then resume the board.
+     ========================================================== */
+  const BANNERS = [
+    ["Banners/barefoot.png", 8],
+    ["Banners/Slime.png", 8],
+    ["Banners/cutwater.jpeg", 8],
+    ["Banners/lottery.jpeg",8],
+    ["Banners/Alani.jpeg",8],
+    ["Banners/oliver.jpeg",8],
+    ["Banners/vape.jpeg",8]
+
+  ];
+
+  const bannerOverlay = document.getElementById("bannerOverlay");
+  const imgA = document.getElementById("bannerImgA");
+  const imgB = document.getElementById("bannerImgB");
+  let activeIsA = true;
+
+  let slideTimer = null;
+  let bannerIndex = 0;
+
+  function startSlideshow(){
+    slideTimer = setInterval(advanceSlide, SLIDE_SECONDS * 1000);
+  }
+
+  function advanceSlide(){
+    const next = cur + 1;
+
+    if (next >= slideEls.length) {
+      // Reached the end of the loop -> stop advancing slides and
+      // start the fullscreen banner takeover. We do NOT switch the
+      // visible slide back to #1 yet — that happens later, instantly,
+      // once it's fully hidden behind the banner overlay.
+      clearInterval(slideTimer);
+      beginBannerTakeover();
+      return;
+    }
+
     slideEls[cur].classList.remove("active");
-    cur = (cur + 1) % slideEls.length;
+    cur = next;
     slideEls[cur].classList.add("active");
     setPanelColor(cur);
-  }, SLIDE_SECONDS * 500);
+  }
+
+  // Preloads an image, then calls onReady() once it's actually decoded
+  // and ready to paint — so it never appears blank/broken on screen.
+  function preload(src, onReady){
+    const loader = new Image();
+    loader.onload = onReady;
+    loader.onerror = onReady; // don't get stuck if a file is missing
+    loader.src = src;
+  }
+
+  function beginBannerTakeover(){
+    bannerIndex = 0;
+    const src = BANNERS[bannerIndex][0];
+
+    preload(src, () => {
+      imgA.src = src;
+      imgA.classList.add("on");
+      imgB.classList.remove("on");
+      activeIsA = true;
+
+      bannerOverlay.classList.add("show");
+
+      // Wait for the overlay to fully fade in before resetting the
+      // slide underneath (invisible since it's fully covered).
+      setTimeout(() => {
+        resetToFirstSlideInstant();
+        scheduleBannerAdvance();
+      }, 900);
+    });
+  }
+
+  function resetToFirstSlideInstant(){
+    slideEls.forEach(el => el.classList.add("no-transition"));
+    slideEls[cur].classList.remove("active");
+    cur = 0;
+    slideEls[cur].classList.add("active");
+    setPanelColor(cur);
+    void stage.offsetWidth;
+    slideEls.forEach(el => el.classList.remove("no-transition"));
+  }
+
+  // Crossfades to the banner at BANNERS[index] only after it's fully
+  // preloaded, using whichever <img> is currently hidden.
+  function showBannerAt(index, onDone){
+    const nextEl = activeIsA ? imgB : imgA;
+    const curEl  = activeIsA ? imgA : imgB;
+    const src = BANNERS[index][0];
+
+    preload(src, () => {
+      nextEl.src = src;
+      requestAnimationFrame(() => {
+        nextEl.classList.add("on");
+        curEl.classList.remove("on");
+        activeIsA = !activeIsA;
+        onDone();
+      });
+    });
+  }
+
+  function scheduleBannerAdvance(){
+    const seconds = BANNERS[bannerIndex][1];
+
+    setTimeout(() => {
+      bannerIndex++;
+      if (bannerIndex < BANNERS.length) {
+        showBannerAt(bannerIndex, scheduleBannerAdvance);
+      } else {
+        // Done with all banners -> fade the whole overlay out, resume
+        // board slideshow (slide #1 is already correctly active
+        // underneath, so this reveal is clean with no flash)
+        bannerOverlay.classList.remove("show");
+        setTimeout(startSlideshow, 900);
+      }
+    }, seconds * 1000);
+  }
+
+  startSlideshow();
 </script>
 </body>
 </html>
