@@ -479,28 +479,8 @@
      cause the crossfade animations to overlap and look glitchy,
      since the fade transitions themselves take ~0.6–0.9s.
      ========================================================== */
-  const SLIDE_SECONDS  = 1;
-  const BANNER_SECONDS = 5;
-
-  // 🧪 TESTING TOGGLE — set to true to skip the left-panel slideshow
-  // entirely and jump straight into the fullscreen banner loop. Great
-  // for quickly testing banner timing without waiting through slides.
-  // Set back to false for the live TV display.
-  const SKIP_SLIDESHOW_FOR_TESTING = false;
-
-  // Safety clamp: transitions themselves take ~0.6–0.9s, so anything
-  // below 2 seconds causes overlapping/glitchy animations. This clamps
-  // whatever you set above to a safe minimum automatically, and warns
-  // you in the browser console if it had to step in.
-  const MIN_SAFE_SECONDS = 2;
-  const SAFE_SLIDE_SECONDS  = Math.max(SLIDE_SECONDS, MIN_SAFE_SECONDS);
-  const SAFE_BANNER_SECONDS = Math.max(BANNER_SECONDS, MIN_SAFE_SECONDS);
-  if (SLIDE_SECONDS < MIN_SAFE_SECONDS) {
-    console.warn(`SLIDE_SECONDS (${SLIDE_SECONDS}) is below the safe minimum of ${MIN_SAFE_SECONDS}s — using ${SAFE_SLIDE_SECONDS}s instead to avoid glitchy transitions.`);
-  }
-  if (BANNER_SECONDS < MIN_SAFE_SECONDS) {
-    console.warn(`BANNER_SECONDS (${BANNER_SECONDS}) is below the safe minimum of ${MIN_SAFE_SECONDS}s — using ${SAFE_BANNER_SECONDS}s instead to avoid glitchy transitions.`);
-  }
+  const SLIDE_SECONDS  = 5;
+  const BANNER_SECONDS = 8;
 
   /* ==========================================================
      EDIT PRICES HERE — one line per brand:
@@ -641,21 +621,7 @@
     "Banners/Alani.jpeg",
     "Banners/oliver.jpeg",
     "Banners/vape.jpeg",
-    "Banners/Marlboro_Deal.jpeg",
-    "Banners/busch_light.jpeg",
-    "Banners/Non-Alc.jpeg",
-    "Banners/juul.jpeg",
-    "Banners/soft_drinks.jpeg",
-    "Banners/all_energy_drinks.jpeg",
-    "Banners/carbliss.jpeg",
-    "Banners/gato.jpeg",
-    "Banners/michelob.jpeg",
-    "Banners/miller_lite.jpeg",
-    "Banners/Non-Alc.jpeg",
-    "Banners/monster.jpeg",
-    "Banners/redbull.jpeg",
-    "Banners/live_bates.jpeg"
-
+    "Banners/marlboro_deal.jpeg",
   ];
 
   const bannerOverlay = document.getElementById("bannerOverlay");
@@ -667,7 +633,7 @@
   let bannerIndex = 0;
 
   function startSlideshow(){
-    slideTimer = setInterval(advanceSlide, SAFE_SLIDE_SECONDS * 1000);
+    slideTimer = setInterval(advanceSlide, SLIDE_SECONDS * 1000);
   }
 
   function advanceSlide(){
@@ -757,16 +723,12 @@
         // board slideshow (slide #1 is already correctly active
         // underneath, so this reveal is clean with no flash)
         bannerOverlay.classList.remove("show");
-        setTimeout(SKIP_SLIDESHOW_FOR_TESTING ? beginBannerTakeover : startSlideshow, 900);
+        setTimeout(startSlideshow, 900);
       }
-    }, SAFE_BANNER_SECONDS * 1000);
+    }, BANNER_SECONDS * 1000);
   }
 
-  if (SKIP_SLIDESHOW_FOR_TESTING) {
-    beginBannerTakeover();
-  } else {
-    startSlideshow();
-  }
+  startSlideshow();
 </script>
 </body>
 </html>
