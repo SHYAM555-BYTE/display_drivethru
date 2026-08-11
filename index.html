@@ -406,6 +406,7 @@
     opacity:0;
     pointer-events:none;
     transition:opacity .9s ease;
+    overflow:hidden;
   }
   .banner-overlay.show{
     opacity:1;
@@ -418,11 +419,39 @@
     height:100%;
     object-fit:contain;
     opacity:0;
-    transition:opacity .6s ease;
+    transition:opacity .7s ease, transform .7s cubic-bezier(.22,.9,.32,1);
+    will-change:opacity, transform;
   }
   .banner-overlay img.on{
     opacity:1;
   }
+
+  /* ---------- ROTATING SLIDE-IN ANIMATIONS ----------
+     Each banner is randomly/sequentially assigned one of these
+     "off-screen" starting positions. When the .on class is added,
+     the img transitions to opacity:1 and transform:none at the
+     same time, producing a different entrance each time. ------- */
+  .banner-overlay img.v-fade{        transform:none; }
+  .banner-overlay img.v-fade.on{     transform:none; }
+
+  .banner-overlay img.v-slide-left{      transform:translateX(6%); }
+  .banner-overlay img.v-slide-left.on{   transform:translateX(0); }
+
+  .banner-overlay img.v-slide-right{     transform:translateX(-6%); }
+  .banner-overlay img.v-slide-right.on{  transform:translateX(0); }
+
+  .banner-overlay img.v-slide-up{        transform:translateY(6%); }
+  .banner-overlay img.v-slide-up.on{     transform:translateY(0); }
+
+  .banner-overlay img.v-slide-down{      transform:translateY(-6%); }
+  .banner-overlay img.v-slide-down.on{   transform:translateY(0); }
+
+  .banner-overlay img.v-zoom-in{         transform:scale(1.08); }
+  .banner-overlay img.v-zoom-in.on{      transform:scale(1); }
+
+  .banner-overlay img.v-zoom-out{        transform:scale(0.94); }
+  .banner-overlay img.v-zoom-out.on{     transform:scale(1); }
+
   .slide.no-transition{
     transition:none !important;
   }
@@ -470,200 +499,91 @@
 
 <script>
   /* ==========================================================
-     ⭐ TIMING CONTROLS ⭐
-     Two independent variables — change either one freely:
+     ⭐ TIMING TIERS ⭐
+     Two duration values — tweak either one freely:
 
-     SLIDE_SECONDS  -> how long each LEFT-PANEL cigarette slide
-                        stays on screen before advancing.
-     BANNER_SECONDS -> how long each FULLSCREEN banner stays up
-                        during the takeover.
+     LONG_SECONDS  -> Marlboro, Copenhagen, Velo, ZYN (tobacco/
+                       nicotine group) PLUS Alani, Monster,
+                       Gatorade, Red Bull — all get this longer time.
+     SHORT_SECONDS -> everything else in the rotation.
 
-     Minimum safe value for both is 2 seconds — going lower can
-     cause the crossfade animations to overlap and look glitchy,
-     since the fade transitions themselves take ~0.6–0.9s.
+     Minimum safe value for either is 2 seconds — going lower can
+     cause the crossfade/slide animations to overlap and look
+     glitchy, since the transitions themselves take ~0.6–0.9s.
      ========================================================== */
-  const SLIDE_SECONDS  = 1;
-  const BANNER_SECONDS = 3;
+  const LONG_SECONDS  = 12;
+  const SHORT_SECONDS = 6;
+  const MIN_SAFE_SECONDS = 2;
 
-  // 🧪 TESTING TOGGLE — set to true to skip the left-panel slideshow
-  // entirely and jump straight into the fullscreen banner loop. Great
-  // for quickly testing banner timing without waiting through slides.
-  // Set back to false for the live TV display.
+  // Also kept for the (currently disabled) left-panel slideshow —
+  // only matters if you bring the .board back.
+  const SLIDE_SECONDS = 5;
+  const SAFE_SLIDE_SECONDS = Math.max(SLIDE_SECONDS, MIN_SAFE_SECONDS);
+
+  // 🧪 TESTING TOGGLE — with the board commented out above, this
+  // should stay true: it skips straight to the fullscreen banner
+  // loop, which is the entire site right now.
   const SKIP_SLIDESHOW_FOR_TESTING = true;
 
-  // Safety clamp: transitions themselves take ~0.6–0.9s, so anything
-  // below 2 seconds causes overlapping/glitchy animations. This clamps
-  // whatever you set above to a safe minimum automatically, and warns
-  // you in the browser console if it had to step in.
-  const MIN_SAFE_SECONDS = 2;
-  const SAFE_SLIDE_SECONDS  = Math.max(SLIDE_SECONDS, MIN_SAFE_SECONDS);
-  const SAFE_BANNER_SECONDS = Math.max(BANNER_SECONDS, MIN_SAFE_SECONDS);
-  if (SLIDE_SECONDS < MIN_SAFE_SECONDS) {
-    console.warn(`SLIDE_SECONDS (${SLIDE_SECONDS}) is below the safe minimum of ${MIN_SAFE_SECONDS}s — using ${SAFE_SLIDE_SECONDS}s instead to avoid glitchy transitions.`);
-  }
-  if (BANNER_SECONDS < MIN_SAFE_SECONDS) {
-    console.warn(`BANNER_SECONDS (${BANNER_SECONDS}) is below the safe minimum of ${MIN_SAFE_SECONDS}s — using ${SAFE_BANNER_SECONDS}s instead to avoid glitchy transitions.`);
-  }
-
-  // ===================== BRANDS + SLIDES DISABLED FOR NOW =====================
-  // Everything below (price board rows + left-panel slideshow) is commented
-  // out with // so it's easy to restore later. Just delete the leading // on
-  // each line (or ask Claude to re-enable it) to bring the board back.
-  //   /* ==========================================================
-  //      EDIT PRICES HERE — one line per brand:
-  //      [ name, cssClass, buyTwo, buyOne, imagePath ]
-  //      ========================================================== */
-  //   const BRANDS = [
-  //     ["Marlboro",                 "marlboro",         8.96, 10.31, "Images_Cig/marlboro_main_line.png"],
-  //     ["Marlboro Special Select",  "special-select",   8.96, 10.31, "Images_Cig/Marlboro_spslcted.png"],
-  //     ["Marlboro Black",           "marlboro-black",   5.40,  6.75, "Images_Cig/marlboro_black.png"],
-  //     ["Basic",                    "marlboro",         5.35,  6.97, "Images_Cig/basic.png"],
-  //     ["L&D",                      "LD",              10.04, 10.14, "Images_Cig/LD_cig.png"],
-  //     ["Montego",                  "montego",          4.24,  5.39, "Images_Cig/montego.png"],
-  //     ["Sonoma",                   "winston",          5.31,  6.81, "Images_Cig/sonoma.jpg"],
-  //   ];
-  //
-  //   const rows = document.getElementById("rows");
-  //   const fmt = n => n.toFixed(2);
-  //
-  //   BRANDS.forEach(([name, cls, two, one, img]) => {
-  //     const row = document.createElement("div");
-  //     row.className = "row";
-  //
-  //     const brandCell = document.createElement("div");
-  //     brandCell.className = "brand";
-  //
-  //     if (img) {
-  //       const image = document.createElement("img");
-  //       image.src = img;
-  //       image.alt = name;
-  //       // Missing image file -> fall back to styled text bar
-  //       image.onerror = () => {
-  //         brandCell.classList.add(cls);
-  //         brandCell.textContent = name;
-  //         image.remove();
-  //         fitRows();
-  //       };
-  //       brandCell.appendChild(image);
-  //     } else {
-  //       brandCell.classList.add(cls);
-  //       brandCell.textContent = name;
-  //     }
-  //
-  //     const p2 = document.createElement("div");
-  //     p2.className = "price buy-two";
-  //     p2.textContent = fmt(two);
-  //
-  //     const p1 = document.createElement("div");
-  //     p1.className = "price buy-one";
-  //     p1.textContent = fmt(one);
-  //
-  //     row.append(brandCell, p2, p1);
-  //     rows.appendChild(row);
-  //   });
-  //
-  //   /* Sizes everything so ALL brands fit on one screen */
-  //   function fitRows(){
-  //     const count = BRANDS.length;
-  //
-  //     const imgH = (80 / count) * 0.88;
-  //     document.documentElement.style.setProperty("--brand-img-h", imgH + "vh");
-  //
-  //     const brandSize = Math.min(3.2, 36 / count) + "vh";
-  //     const priceSize = Math.min(3.6, 40 / count) + "vh";
-  //     document.querySelectorAll(".brand:not(:has(img))").forEach(el => el.style.fontSize = brandSize);
-  //     document.querySelectorAll(".price").forEach(el => el.style.fontSize = priceSize);
-  //   }
-  //   fitRows();
-  //   window.addEventListener("resize", fitRows);
-  //
-  //   /* ==========================================================
-  //      SLIDESHOW (left panel) — one line per slide:
-  //      [ imagePath, bigName, dealLine, dealSubLine, panelColor ]
-  //      (deal lines are optional — use "" to leave them off)
-  //      Timing is controlled entirely by SLIDE_SECONDS above —
-  //      there is no per-slide duration anymore.
-  //      ========================================================== */
-  //   const SLIDES = [
-  //     ["Left_Cig/marlboro_main_line.jpg", "MARLBORO",       "BUY 2 & SAVE $2.70", "8.96 per pack when you buy two", "#8f0b20"],  /* deep red    */
-  //     ["Left_Cig/Marlboro_spslcted.jpg",  "SPECIAL SELECT", "BUY 2 & SAVE $2.70", "8.96 per pack when you buy two", "#8a6d3b"],  /* rich gold   */
-  //     ["Left_Cig/marlboro_black.jpg",     "MARLBORO BLACK", "BUY 2 & SAVE $2.70", "5.40 per pack when you buy two", "#1c1c1e"],  /* black       */
-  //     ["Left_Cig/basic.jpg",              "BASIC",          "BUY 2 & SAVE $3.24", "5.35 per pack when you buy two", "#1e5e3a"],  /* forest green*/
-  //     ["Left_Cig/LD_cig.jpg",             "L.DUCAT",        "ONLY $10.04",        "per pack when you buy two",      "#4a3b2a"],  /* bronze      */
-  //     ["Left_Cig/montego.jpg",            "MONTEGO",        "BUY 2 & SAVE $2.30", "Just 4.24 per pack",             "#0a5c39"],  /* jungle green*/
-  //     ["Left_Cig/sonoma.jpg",             "SONOMA",         "BUY 2 & SAVE $3.00", "Just 5.31 per pack",             "#3d6e99"],  /* ice blue    */
-  //   ];
-  //
-  //   const stage = document.getElementById("slideStage");
-  //   const promoPanel = document.querySelector(".promo");
-  //
-  //   SLIDES.forEach(([img, name, deal, sub, color], i) => {
-  //     const s = document.createElement("div");
-  //     s.className = "slide" + (i === 0 ? " active" : "");
-  //
-  //     if (img) {
-  //       const im = document.createElement("img");
-  //       im.src = img;
-  //       im.alt = name;
-  //       im.onerror = () => im.remove();
-  //       s.appendChild(im);
-  //     }
-  //     const n = document.createElement("div");
-  //     n.className = "slide-name";
-  //     n.textContent = name;
-  //     s.appendChild(n);
-  //
-  //     if (deal) {
-  //       const d = document.createElement("div");
-  //       d.className = "slide-deal";
-  //       d.innerHTML = deal + (sub ? "<small>" + sub + "</small>" : "");
-  //       s.appendChild(d);
-  //     }
-  //     stage.appendChild(s);
-  //   });
-  //
-  //   let cur = 0;
-  //   const slideEls = stage.querySelectorAll(".slide");
-  //
-  //   function setPanelColor(i){
-  //     promoPanel.style.backgroundColor = SLIDES[i][4] || "#0a3d8f";
-  //   }
-  //   setPanelColor(0);
-  // ================================================================================
-
   /* ==========================================================
-     FULLSCREEN BANNER TAKEOVER
-     One entry per banner image: just the image path.
-     Timing is controlled entirely by BANNER_SECONDS above —
-     there is no per-banner duration anymore.
-
-     After the left-side slideshow finishes ONE FULL CYCLE, we
-     pause it, cover the WHOLE screen with each banner in turn,
-     then resume the board.
+     EDIT BANNERS HERE — [ imagePath, secondsToShow ]
+     Synced with your Banners/ folder.
      ========================================================== */
   const BANNERS = [
-    "Banners/barefoot.png",
-    "Banners/Slime.png",
-    "Banners/cutwater.jpeg",
-    "Banners/lottery.jpeg",
-    // "Banners/Alani.jpeg",
-    "Banners/oliver.jpeg",
-    "Banners/vape.jpeg",
-    "Banners/Marlboro_Deal.jpeg",
-    "Banners/busch_light.jpeg",
-    "Banners/Non-Alc.jpeg",
-    "Banners/juul.jpeg",
-    "Banners/soft_drinks.jpeg",
-    "Banners/all_energy_drinks.jpeg",
-    "Banners/carbliss.jpeg",
-    "Banners/gato.jpeg",
-    "Banners/michelob.jpeg",
-    "Banners/miller_lite.jpeg",
-    // "Banners/Non-Alc.jpeg",
-    // "Banners/monster.jpeg",
-    // "Banners/redbull.jpeg",
-    "Banners/live_bates.jpeg"
+    ["Banners/marlboro.jpeg",          LONG_SECONDS],
+    ["Banners/copenhagen.jpeg",        LONG_SECONDS],
+    ["Banners/velo_plus.jpeg",         LONG_SECONDS],
+    ["Banners/zyn_banner.jpeg",        LONG_SECONDS],
+    ["Banners/Alani.jpeg",             LONG_SECONDS],
+    ["Banners/monster.jpeg",           LONG_SECONDS],
+    ["Banners/gato.jpeg",              LONG_SECONDS],
+    ["Banners/redbull.jpeg",           LONG_SECONDS],
+
+    ["Banners/all_energy_drinks.jpeg", SHORT_SECONDS],
+    ["Banners/barefoot.png",           SHORT_SECONDS],
+    ["Banners/busch_light.jpeg",       SHORT_SECONDS],
+    ["Banners/carbliss.jpeg",          SHORT_SECONDS],
+    ["Banners/cutwater.jpeg",          SHORT_SECONDS],
+    ["Banners/ghost.jpeg",             SHORT_SECONDS],
+    ["Banners/juul.jpeg",              SHORT_SECONDS],
+    ["Banners/live_bates.jpeg",        SHORT_SECONDS],
+    ["Banners/lottery.jpeg",           SHORT_SECONDS],
+    ["Banners/michelob.jpeg",          SHORT_SECONDS],
+    ["Banners/miller_lite.jpeg",       SHORT_SECONDS],
+    ["Banners/Non-Alc.jpeg",           SHORT_SECONDS],
+    ["Banners/oliver.jpeg",            SHORT_SECONDS],
+    ["Banners/soft_drinks.jpeg",       SHORT_SECONDS],
+    ["Banners/vape.jpeg",              SHORT_SECONDS],
   ];
+
+  /* ==========================================================
+     ROTATING ANIMATIONS
+     Each entry here is a CSS class defined above. The banners
+     cycle through this list in order (wrapping around), so no
+     two consecutive banners use the same entrance animation.
+     Add/remove entries to change the variety.
+     ========================================================== */
+  const ANIMATIONS = [
+    "v-fade",
+    "v-slide-left",
+    "v-zoom-in",
+    "v-slide-up",
+    "v-slide-right",
+    "v-zoom-out",
+    "v-slide-down",
+  ];
+  let lastAnimation = null;
+  function animationFor(){
+    // Pick a random animation, but never the same one twice in a row —
+    // otherwise pure randomness can occasionally repeat back-to-back,
+    // which looks like it's not actually varying.
+    let choice;
+    do {
+      choice = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
+    } while (choice === lastAnimation && ANIMATIONS.length > 1);
+    lastAnimation = choice;
+    return choice;
+  }
 
   const bannerOverlay = document.getElementById("bannerOverlay");
   const imgA = document.getElementById("bannerImgA");
@@ -681,10 +601,6 @@
     const next = cur + 1;
 
     if (next >= slideEls.length) {
-      // Reached the end of the loop -> stop advancing slides and
-      // start the fullscreen banner takeover. We do NOT switch the
-      // visible slide back to #1 yet — that happens later, instantly,
-      // once it's fully hidden behind the banner overlay.
       clearInterval(slideTimer);
       beginBannerTakeover();
       return;
@@ -707,18 +623,23 @@
 
   function beginBannerTakeover(){
     bannerIndex = 0;
-    const src = BANNERS[bannerIndex];
+    const src = BANNERS[bannerIndex][0];
+    const anim = animationFor();
 
     preload(src, () => {
       imgA.src = src;
+      imgA.className = anim; // reset any old variant classes
+      imgB.className = "";
+
+      // Force layout so the "off" position (set by the variant class)
+      // is applied before we flip to .on, otherwise the browser may
+      // skip straight to the end state with no visible animation.
+      void imgA.offsetWidth;
       imgA.classList.add("on");
-      imgB.classList.remove("on");
       activeIsA = true;
 
       bannerOverlay.classList.add("show");
 
-      // Wait for the overlay to fully fade in before resetting the
-      // slide underneath (invisible since it's fully covered).
       setTimeout(() => {
         resetToFirstSlideInstant();
         scheduleBannerAdvance();
@@ -739,15 +660,20 @@
     slideEls.forEach(el => el.classList.remove("no-transition"));
   }
 
-  // Crossfades to the banner at BANNERS[index] only after it's fully
-  // preloaded, using whichever <img> is currently hidden.
+  // Crossfades/slides to the banner at BANNERS[index] only after it's
+  // fully preloaded, using whichever <img> is currently hidden, with
+  // that banner's assigned entrance animation.
   function showBannerAt(index, onDone){
     const nextEl = activeIsA ? imgB : imgA;
     const curEl  = activeIsA ? imgA : imgB;
-    const src = BANNERS[index];
+    const src = BANNERS[index][0];
+    const anim = animationFor();
 
     preload(src, () => {
       nextEl.src = src;
+      nextEl.className = anim; // sets the "off" starting position
+      void nextEl.offsetWidth; // force layout before animating in
+
       requestAnimationFrame(() => {
         nextEl.classList.add("on");
         curEl.classList.remove("on");
@@ -758,18 +684,18 @@
   }
 
   function scheduleBannerAdvance(){
+    // Each banner carries its own duration as BANNERS[bannerIndex][1].
+    const seconds = Math.max(BANNERS[bannerIndex][1], MIN_SAFE_SECONDS);
+
     setTimeout(() => {
       bannerIndex++;
       if (bannerIndex < BANNERS.length) {
         showBannerAt(bannerIndex, scheduleBannerAdvance);
       } else {
-        // Done with all banners -> fade the whole overlay out, resume
-        // board slideshow (slide #1 is already correctly active
-        // underneath, so this reveal is clean with no flash)
         bannerOverlay.classList.remove("show");
         setTimeout(SKIP_SLIDESHOW_FOR_TESTING ? beginBannerTakeover : startSlideshow, 900);
       }
-    }, SAFE_BANNER_SECONDS * 1000);
+    }, seconds * 1000);
   }
 
   if (SKIP_SLIDESHOW_FOR_TESTING) {
