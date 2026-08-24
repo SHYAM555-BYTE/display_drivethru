@@ -3,706 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Riverside Cruise-In — Tobacco Prices</title>
-
-<!-- Fonts: Bebas Neue (display), Oswald (labels), Archivo (prices) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;700&family=Archivo:wght@800;900&display=swap" rel="stylesheet">
-
+<title>Slideshow</title>
 <style>
-  :root{
-    /* ---------- NIGHT NEON THEME (high visibility from a car) ---------- */
-    --bg-1:#0b1526;             /* deep midnight navy            */
-    --bg-2:#12233d;             /* lighter navy                  */
-    --card:#f4f7fb;             /* near-white cards for banners  */
-    --amber:#ffb703;            /* glowing amber                 */
-    --red:#ff3b4e;              /* electric red                  */
-    --cyan:#37c4f5;             /* accent blue                   */
-    --ink:#eef3fa;
-    --panel-blue-1:#2f7ce0;
-    --panel-blue-2:#0a3d8f;
-    --row-gap:1vh;
-
-    --brand-img-h:10vh;         /* auto-set by script            */
-
-    --font-display:"Bebas Neue", "Arial Narrow", Arial, sans-serif;
-    --font-label:"Oswald", "Arial Narrow", Arial, sans-serif;
-    --font-price:"Archivo", Arial, Helvetica, sans-serif;
-  }
   *{margin:0;padding:0;box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    background:
-      radial-gradient(circle at 80% 0%, rgba(55,196,245,.12), transparent 45%),
-      radial-gradient(circle at 15% 100%, rgba(255,183,3,.10), transparent 50%),
-      linear-gradient(160deg, var(--bg-1), var(--bg-2));
-    font-family:var(--font-label);
-    overflow:hidden;
-    color:var(--ink);
-  }
+  html,body{height:100%;background:#000;overflow:hidden;}
 
-  .board{
-    display:grid;
-    grid-template-columns: 24vw 1fr;
+  .slideshow{
+    position:relative;
     width:100vw;
     height:100vh;
-    gap:0.8vw;
-    padding:1vh 0.8vw;
   }
 
-  /* ---------- LEFT PROMO PANEL ---------- */
-  /* ---------- SLIDESHOW ---------- */
-  .slide-stage{
-    position:relative;
-    flex:1;
-    width:100%;
-    min-height:0;
-    margin-bottom:1vh;
-  }
-  .slide{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:flex-start;
-    padding-top:1vh;
-    gap:2vh;
-    opacity:0;
-    transform:scale(.97);
-    transition:opacity .8s ease, transform .8s ease;
-    pointer-events:none;
-  }
-  .slide img{
-    width:100%;
-    max-height:62vh;
-    object-fit:cover;        /* fills the width, crops a touch of blur if needed */
-    border-radius:1.5vh;
-    filter:drop-shadow(0 1vh 2.5vh rgba(0,0,0,.5));
-  }
-
-  .slide.active{
-    opacity:1;
-    transform:scale(1);
-  }
-  .slide .slide-name{
-    font-family:var(--font-display);
-    font-size:7vh;
-    letter-spacing:.08em;
-    color:#fff;
-    text-shadow:0 0 2.5vh rgba(255,255,255,.4);
-    text-align:center;
-    line-height:1;
-  }
-  .slide .slide-deal{
-    font-family:var(--font-display);
-    font-size:4.5vh;
-    color:var(--amber);
-    text-shadow:0 0 2vh rgba(255,183,3,.7);
-    letter-spacing:.05em;
-    text-align:center;
-    line-height:1.1;
-  }
-  .slide .slide-deal small{
-    display:block;
-    font-family:var(--font-label);
-    font-size:2vh;
-    color:#fff;
-    font-weight:500;
-    margin-top:0.6vh;
-  }
-  /* Little progress dots */
-  .slide-dots{
-    display:flex;
-    gap:0.5vw;
-    justify-content:center;
-    margin-bottom:1.2vh;
-  }
-  .slide-dots span{
-    width:1.2vh;
-    height:1.2vh;
-    border-radius:50%;
-    background:rgba(255,255,255,.25);
-    transition:background .3s, transform .3s;
-  }
-  .slide-dots span.on{
-    background:var(--amber);
-    transform:scale(1.3);
-    box-shadow:0 0 1vh rgba(255,183,3,.7);
-  }
-
-  /* Panel: solid color that the JS fades per brand */
-  .promo{
-    position:relative;
-    background-color:#0a3d8f;               /* JS changes this per slide */
-    transition:background-color 1.2s ease;
-    border-radius:1vw;
-    box-shadow:0 0 3vh rgba(55,196,245,.35);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:space-between;
-    padding:2vh 1vw;
-    text-align:center;
-    color:#fff;
-    overflow:hidden;
-  }
-  .promo::before{                            /* subtle depth overlay */
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(160deg, rgba(255,255,255,.10), rgba(0,0,0,.35) 80%);
-    pointer-events:none;
-  }
-  .promo > *{position:relative; z-index:1;}
-
-  .promo .packs{
-    display:flex;
-    gap:0.6vw;
-    align-items:flex-end;
-    justify-content:center;
-  }
-  .promo .packs img{
-    width:5.5vw;
-    height:auto;
-    max-height:19vh;
-    object-fit:contain;
-    filter:drop-shadow(0 0.8vh 1vh rgba(0,0,0,.4));
-  }
-  .pack{
-    width:5.5vw;
-    height:16vh;
-    border-radius:0.4vw;
-    box-shadow:0 0.8vh 1.5vh rgba(0,0,0,.45);
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    font-weight:bold;
-    font-size:1.1vh;
-    padding-bottom:1vh;
-    color:#fff;
-    letter-spacing:.05em;
-  }
-  .pack.menthol{background:linear-gradient(180deg,#0f7a4d,#0a5c39);}
-  .pack.red{background:linear-gradient(180deg,#ff3b4e,#8f0b20); height:19vh;}
-  .pack.gold{background:linear-gradient(180deg,#d8c9a3,#b7a274); color:#4a3d20;}
-
-  .promo .brand-name{
-    font-family:var(--font-display);
-    font-size:9vh;
-    letter-spacing:.06em;
-    text-shadow:0 0 2vh rgba(255,255,255,.4);
-  }
-  .promo .save{
-    font-family:var(--font-display);
-    font-size:6.2vh;
-    color:var(--amber);
-    text-shadow:0 0 2.5vh rgba(255,183,3,.7);
-    line-height:1;
-    letter-spacing:.04em;
-  }
-  .promo .save small{
-    display:block;
-    font-family:var(--font-label);
-    font-size:2.3vh;
-    color:#fff;
-    font-weight:500;
-    margin-top:1vh;
-  }
-  .rewards{
-    background:#fff;
-    color:var(--panel-blue-1);
-    border-radius:1.5vh;
-    padding:1.2vh 1.4vw;
-    font-weight:700;
-    font-size:2.2vh;
-    line-height:1.15;
-    box-shadow:0 0.5vh 1.5vh rgba(0,0,0,.35);
-  }
-  .rewards span{color:#e63946;}
-  .warning-left{
-    background:#fff;
-    color:#000;
-    font-family:Arial, sans-serif;
-    font-size:1.15vh;
-    font-weight:bold;
-    text-transform:uppercase;
-    padding:0.8vh 0.6vw;
-    border:0.15vh solid #000;
-    border-radius:0.6vh;
-    line-height:1.25;
-    text-align:left;
-  }
-  /* ---------- RIGHT PRICE GRID ---------- */
-  .pricelist{
-    display:flex;
-    flex-direction:column;
-    background:rgba(255,255,255,.04);
-    border:0.15vh solid rgba(255,255,255,.12);
-    border-radius:1vw;
-    padding:1vh 1vw;
-    height:100%;
-    min-height:0;
-  }
-
-  /* Header: store name CENTERED on top, column labels below */
-  .list-header{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding-bottom:0.6vh;
-    margin-bottom:0.8vh;
-    border-bottom:0.4vh solid;
-    border-image:linear-gradient(90deg,var(--red),var(--amber),var(--cyan)) 1;
-  }
-  .logo{
-    font-family:var(--font-display);
-    font-size:6vh;
-    letter-spacing:.08em;
-    text-align:center;
-    color:#fff;
-    text-shadow:0 0 2.5vh rgba(55,196,245,.6);
-    line-height:1;
-  }
-  .logo .fly{color:var(--amber); text-shadow:0 0 2.5vh rgba(255,183,3,.6);}
-  .logo img{height:6vh; width:auto; object-fit:contain;}
-
-  .col-labels{
-    display:grid;
-    grid-template-columns: 1fr 13vw 13vw;
-    width:100%;
-    margin-top:0.6vh;
-  }
-  .col-label{
-    text-align:center;
-    font-family:var(--font-label);
-    font-weight:500;
-    font-size:1.7vh;
-    line-height:1.2;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:#9db4d0;
-  }
-  .col-label u{
-    display:block;
-    text-decoration:none;
-    font-weight:700;
-    font-size:2.6vh;
-    letter-spacing:.12em;
-  }
-  .col-label.two u{color:var(--red); text-shadow:0 0 1.5vh rgba(255,59,78,.55);}
-  .col-label.one u{color:var(--amber); text-shadow:0 0 1.5vh rgba(255,183,3,.55);}
-
-  .rows{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    gap:var(--row-gap);
-    min-height:0;
-  }
-  .row{
-    flex:1 1 0;
-    min-height:0;
-    overflow:hidden;
-    display:grid;
-    grid-template-columns: 1fr 13vw 13vw;
-    align-items:center;
-    background:var(--card);
-    border-radius:1.2vh;
-    box-shadow:0 0.5vh 2vh rgba(0,0,0,.45);
-  }
-
-  .brand{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:0;
-    height:100%;
-    font-family:var(--font-display);
-    letter-spacing:.08em;
-    font-size:3.2vh;
-    color:#111;
-    padding:0.2vh 0.2vw;
-    white-space:nowrap;
-    overflow:hidden;
-    border-radius:1.2vh 0 0 1.2vh;
-  }
-  /* All images: identical forced size, filling the box */
-  .brand img{
-    width:100%;
-    height:var(--brand-img-h);
-    object-fit:fill;
-    display:block;
-    border-radius:1vh;
-  }
-
-  /* GLOWING PRICE PILLS — big and readable from a car */
-  .price{
-    justify-self:center;
-    font-family:var(--font-price);
-    font-weight:900;
-    font-size:3.6vh;
-    font-variant-numeric:tabular-nums;
-    padding:0.9vh 1.4vw;
-    border-radius:99vh;
-    color:#fff;
-  }
-  .price.buy-two{
-    background:linear-gradient(160deg,var(--red),#b3202c);
-    box-shadow:0 0 2vh rgba(255,59,78,.55);
-  }
-  .price.buy-one{
-    background:linear-gradient(160deg,#0e3f73,#0a2c50);
-    border:0.2vh solid var(--cyan);
-    box-shadow:0 0 1.6vh rgba(55,196,245,.35);
-  }
-
-  /* Text fallback colors (used only when an image is missing) */
-  .marlboro        {background:#fff;color:#e63946;border:0.2vh solid #e63946;}
-  .special-select  {background:linear-gradient(180deg,#7a1f1f,#5c1414);color:#f4e3b2;}
-  .marlboro-black  {background:#111;color:#fff;}
-  .camel           {background:linear-gradient(180deg,#2e6fbd,#1c4f8f);color:#f7e7b6;}
-  .newport         {background:#fff;color:#00843d;border:0.2vh solid #00843d;}
-  .winston         {background:linear-gradient(180deg,#b01c22,#7e1116);color:#fff;}
-  .lm              {background:linear-gradient(90deg,#b01c22,#e8e8e8 55%,#1c4f8f);color:#111;}
-  .LD              {background:linear-gradient(90deg,#b01c22,#e8e8e8 55%,#1c4f8f);color:#111;}
-  .montego         {background:linear-gradient(90deg,#f0c419,#0a7a3d);color:#fff;}
-  .doral           {background:linear-gradient(180deg,#2f7ce0,#0a3d8f);color:#fff;}
-  .american-spirit {background:linear-gradient(180deg,#2b2b2b,#111);color:#e8c477;}
-  .grizzly         {background:#111;color:#e02b2b;letter-spacing:.15em;}
-
-  .warning-strip{
-    margin-top:1vh;
-    background:#fff;
-    color:#000;
-    border:0.2vh solid #000;
-    border-radius:0.8vh;
-    font-family:Arial, sans-serif;
-    font-size:1.3vh;
-    font-weight:bold;
-    text-transform:uppercase;
-    padding:0.7vh 0.8vw;
-    text-align:center;
-  }
-
-  @media (max-aspect-ratio: 4/5){
-    body{overflow:auto;}
-    .board{grid-template-columns:1fr;height:auto;}
-    .promo{min-height:40vh;}
-  }
-
-  /* ---------- FULLSCREEN BANNER TAKEOVER ---------- */
-  .banner-overlay{
-    position:fixed;
-    inset:0;
-    width:100vw;
-    height:100vh;
-    z-index:999;
-    background:#000;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .9s ease;
-    overflow:hidden;
-  }
-  .banner-overlay.show{
-    opacity:1;
-    pointer-events:auto;
-  }
-  .banner-overlay img{
+  .slideshow img{
     position:absolute;
     inset:0;
     width:100%;
     height:100%;
     object-fit:contain;
     opacity:0;
-    transition:opacity .7s ease, transform .7s cubic-bezier(.22,.9,.32,1);
-    will-change:opacity, transform;
+    transition:opacity 1s ease-in-out;
   }
-  .banner-overlay img.on{
+
+  .slideshow img.active{
     opacity:1;
-  }
-
-  /* ---------- ROTATING SLIDE-IN ANIMATIONS ----------
-     Each banner is randomly/sequentially assigned one of these
-     "off-screen" starting positions. When the .on class is added,
-     the img transitions to opacity:1 and transform:none at the
-     same time, producing a different entrance each time. ------- */
-  .banner-overlay img.v-fade{        transform:none; }
-  .banner-overlay img.v-fade.on{     transform:none; }
-
-  .banner-overlay img.v-slide-left{      transform:translateX(6%); }
-  .banner-overlay img.v-slide-left.on{   transform:translateX(0); }
-
-  .banner-overlay img.v-slide-right{     transform:translateX(-6%); }
-  .banner-overlay img.v-slide-right.on{  transform:translateX(0); }
-
-  .banner-overlay img.v-slide-up{        transform:translateY(6%); }
-  .banner-overlay img.v-slide-up.on{     transform:translateY(0); }
-
-  .banner-overlay img.v-slide-down{      transform:translateY(-6%); }
-  .banner-overlay img.v-slide-down.on{   transform:translateY(0); }
-
-  .banner-overlay img.v-zoom-in{         transform:scale(1.08); }
-  .banner-overlay img.v-zoom-in.on{      transform:scale(1); }
-
-  .banner-overlay img.v-zoom-out{        transform:scale(0.94); }
-  .banner-overlay img.v-zoom-out.on{     transform:scale(1); }
-
-  .slide.no-transition{
-    transition:none !important;
   }
 </style>
 </head>
 <body>
 
-<!--  BOARD DISABLED FOR NOW — uncomment this whole block to bring the price board back
-<div class="board">
-
-  LEFT: brand slideshow
-  <aside class="promo">
-    <div class="slide-stage" id="slideStage"></div>
-  </aside>
-
-  RIGHT: price list
-  <main class="pricelist">
-    <div class="list-header">
-      CENTERED store name
-      <div class="logo">RIVERSIDE <span class="fly">CRUISE-IN</span></div>
-      Column labels sit under the name, aligned over the price columns
-      <div class="col-labels">
-        <div></div>
-        <div class="col-label two">Per pack when you<u>BUY TWO</u></div>
-        <div class="col-label one">Per pack when you<u>BUY ONE</u></div>
-      </div>
-    </div>
-
-    <div class="rows" id="rows"></div>
-
-    <div class="warning-strip">
-      Warning: This product contains nicotine. Nicotine is an addictive chemical.
-    </div>
-  </main>
-
-</div>
--->
-
-
-<!-- FULLSCREEN BANNER TAKEOVER (covers everything above) -->
-<div class="banner-overlay" id="bannerOverlay">
-  <img id="bannerImgA" src="" alt="banner">
-  <img id="bannerImgB" src="" alt="banner">
-</div>
+<div class="slideshow" id="slideshow"></div>
 
 <script>
-  /* ==========================================================
-     ⭐ TIMING TIERS ⭐
-     Two duration values — tweak either one freely:
+  // ==========================================================
+  // EDIT THIS LIST — each image now has its own duration (seconds).
+  // Bump a slide's number up if it's more important, or down if
+  // it's less important / can flash by quicker.
+  // ==========================================================
+  const IMAGES = [
+    {src: "Banners/Carton.jpg",              seconds: 6 },
+    { src: "Banners/Copenhagen.jpg",         seconds: 6 },
+    { src: "Banners/zyn_banner.jpeg",        seconds: 6 },
+    { src: "Banners/marlboro.jpeg",          seconds: 6 },
+    { src: "Banners/velo_plus.jpeg",         seconds: 6 },
+    { src: "Banners/vape.jpeg",              seconds: 6 },
+    { src: "Banners/foger_pods.jpg",         seconds: 6 },
+    { src: "Banners/vuse.jpg",               seconds: 6 },
 
-     LONG_SECONDS  -> Marlboro, Copenhagen, Velo, ZYN (tobacco/
-                       nicotine group) PLUS Alani, Monster,
-                       Gatorade, Red Bull — all get this longer time.
-     SHORT_SECONDS -> everything else in the rotation.
+//HardDRINKS FROM HERE
 
-     Minimum safe value for either is 2 seconds — going lower can
-     cause the crossfade/slide animations to overlap and look
-     glitchy, since the transitions themselves take ~0.6–0.9s.
-     ========================================================== */
-  const LONG_SECONDS  = 12;
-  const SHORT_SECONDS = 6;
-  const MIN_SAFE_SECONDS = 2;
+    { src: "Banners/barefoot.png",           seconds: 4 },
+    { src: "Banners/busch_light.jpeg",       seconds: 4 },
+    { src: "Banners/carbliss.jpeg",          seconds: 4 },
+    { src: "Banners/cutwater.jpeg",          seconds: 4 },
+    { src: "Banners/michelob.jpeg",          seconds: 4 },
+    { src: "Banners/miller_lite.jpeg",       seconds: 4 },
+    { src: "Banners/Non-Alc.jpeg",           seconds: 3 },
+    { src: "Banners/oliver.jpeg",            seconds: 3 },
 
-  // Also kept for the (currently disabled) left-panel slideshow —
-  // only matters if you bring the .board back.
-  const SLIDE_SECONDS = 5;
-  const SAFE_SLIDE_SECONDS = Math.max(SLIDE_SECONDS, MIN_SAFE_SECONDS);
+  //SoftDrinks/EnergyDrinks
 
-  // 🧪 TESTING TOGGLE — with the board commented out above, this
-  // should stay true: it skips straight to the fullscreen banner
-  // loop, which is the entire site right now.
-  const SKIP_SLIDESHOW_FOR_TESTING = true;
+    { src: "Banners/redbull.jpeg",           seconds: 6 },
+    { src: "Banners/soft_drinks.jpeg",       seconds: 6 },
+    { src: "Banners/all_energy_drinks.jpeg", seconds: 4 },
+    { src: "Banners/gato.jpeg",              seconds: 4 },
+    { src: "Banners/ghost.jpeg",             seconds: 4 },
+    { src: "Banners/Alani.jpeg",             seconds: 4 },
+    { src: "Banners/monster.jpeg",           seconds: 6 },
+//Misc
 
-  /* ==========================================================
-     EDIT BANNERS HERE — [ imagePath, secondsToShow ]
-     Synced with your Banners/ folder.
-     ========================================================== */
-  const BANNERS = [
-    ["Banners/marlboro.jpeg",          LONG_SECONDS],
-    ["Banners/copenhagen.jpeg",        LONG_SECONDS],
-    ["Banners/velo_plus.jpeg",         LONG_SECONDS],
-    ["Banners/zyn_banner.jpeg",        LONG_SECONDS],
-    ["Banners/Alani.jpeg",             LONG_SECONDS],
-    ["Banners/monster.jpeg",           LONG_SECONDS],
-    ["Banners/gato.jpeg",              LONG_SECONDS],
-    ["Banners/redbull.jpeg",           LONG_SECONDS],
-
-    ["Banners/all_energy_drinks.jpeg", SHORT_SECONDS],
-    ["Banners/barefoot.png",           SHORT_SECONDS],
-    ["Banners/busch_light.jpeg",       SHORT_SECONDS],
-    ["Banners/carbliss.jpeg",          SHORT_SECONDS],
-    ["Banners/cutwater.jpeg",          SHORT_SECONDS],
-    ["Banners/ghost.jpeg",             SHORT_SECONDS],
-    ["Banners/juul.jpeg",              SHORT_SECONDS],
-    ["Banners/live_bates.jpeg",        SHORT_SECONDS],
-    ["Banners/lottery.jpeg",           SHORT_SECONDS],
-    ["Banners/michelob.jpeg",          SHORT_SECONDS],
-    ["Banners/miller_lite.jpeg",       SHORT_SECONDS],
-    ["Banners/Non-Alc.jpeg",           SHORT_SECONDS],
-    ["Banners/oliver.jpeg",            SHORT_SECONDS],
-    ["Banners/soft_drinks.jpeg",       SHORT_SECONDS],
-    ["Banners/vape.jpeg",              SHORT_SECONDS],
+    { src: "Banners/live_bates.jpeg",        seconds: 3 },
+    { src: "Banners/lottery.jpeg",           seconds: 3 },
   ];
 
-  /* ==========================================================
-     ROTATING ANIMATIONS
-     Each entry here is a CSS class defined above. The banners
-     cycle through this list in order (wrapping around), so no
-     two consecutive banners use the same entrance animation.
-     Add/remove entries to change the variety.
-     ========================================================== */
-  const ANIMATIONS = [
-    "v-fade",
-    "v-slide-left",
-    "v-zoom-in",
-    "v-slide-up",
-    "v-slide-right",
-    "v-zoom-out",
-    "v-slide-down",
-  ];
-  let lastAnimation = null;
-  function animationFor(){
-    // Pick a random animation, but never the same one twice in a row —
-    // otherwise pure randomness can occasionally repeat back-to-back,
-    // which looks like it's not actually varying.
-    let choice;
-    do {
-      choice = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
-    } while (choice === lastAnimation && ANIMATIONS.length > 1);
-    lastAnimation = choice;
-    return choice;
+  const container = document.getElementById("slideshow");
+
+  // Build an <img> for every image in the list
+  IMAGES.forEach((item, i) => {
+    const img = document.createElement("img");
+    img.src = item.src;
+    if (i === 0) img.classList.add("active");
+    container.appendChild(img);
+  });
+
+  const imgEls = container.querySelectorAll("img");
+  let current = 0;
+
+  function nextSlide(){
+    imgEls[current].classList.remove("active");
+    current = (current + 1) % imgEls.length;
+    imgEls[current].classList.add("active");
+    scheduleNext();
   }
 
-  const bannerOverlay = document.getElementById("bannerOverlay");
-  const imgA = document.getElementById("bannerImgA");
-  const imgB = document.getElementById("bannerImgB");
-  let activeIsA = true;
-
-  let slideTimer = null;
-  let bannerIndex = 0;
-
-  function startSlideshow(){
-    slideTimer = setInterval(advanceSlide, SAFE_SLIDE_SECONDS * 1000);
+  function scheduleNext(){
+    const seconds = IMAGES[current].seconds;
+    setTimeout(nextSlide, seconds * 1000);
   }
 
-  function advanceSlide(){
-    const next = cur + 1;
-
-    if (next >= slideEls.length) {
-      clearInterval(slideTimer);
-      beginBannerTakeover();
-      return;
-    }
-
-    slideEls[cur].classList.remove("active");
-    cur = next;
-    slideEls[cur].classList.add("active");
-    setPanelColor(cur);
-  }
-
-  // Preloads an image, then calls onReady() once it's actually decoded
-  // and ready to paint — so it never appears blank/broken on screen.
-  function preload(src, onReady){
-    const loader = new Image();
-    loader.onload = onReady;
-    loader.onerror = onReady; // don't get stuck if a file is missing
-    loader.src = src;
-  }
-
-  function beginBannerTakeover(){
-    bannerIndex = 0;
-    const src = BANNERS[bannerIndex][0];
-    const anim = animationFor();
-
-    preload(src, () => {
-      imgA.src = src;
-      imgA.className = anim; // reset any old variant classes
-      imgB.className = "";
-
-      // Force layout so the "off" position (set by the variant class)
-      // is applied before we flip to .on, otherwise the browser may
-      // skip straight to the end state with no visible animation.
-      void imgA.offsetWidth;
-      imgA.classList.add("on");
-      activeIsA = true;
-
-      bannerOverlay.classList.add("show");
-
-      setTimeout(() => {
-        resetToFirstSlideInstant();
-        scheduleBannerAdvance();
-      }, 900);
-    });
-  }
-
-  function resetToFirstSlideInstant(){
-    // Safe no-op if the left-panel slideshow is commented out / not on
-    // the page — nothing to reset in that case.
-    if (typeof slideEls === "undefined" || !slideEls || slideEls.length === 0) return;
-    slideEls.forEach(el => el.classList.add("no-transition"));
-    slideEls[cur].classList.remove("active");
-    cur = 0;
-    slideEls[cur].classList.add("active");
-    setPanelColor(cur);
-    void stage.offsetWidth;
-    slideEls.forEach(el => el.classList.remove("no-transition"));
-  }
-
-  // Crossfades/slides to the banner at BANNERS[index] only after it's
-  // fully preloaded, using whichever <img> is currently hidden, with
-  // that banner's assigned entrance animation.
-  function showBannerAt(index, onDone){
-    const nextEl = activeIsA ? imgB : imgA;
-    const curEl  = activeIsA ? imgA : imgB;
-    const src = BANNERS[index][0];
-    const anim = animationFor();
-
-    preload(src, () => {
-      nextEl.src = src;
-      nextEl.className = anim; // sets the "off" starting position
-      void nextEl.offsetWidth; // force layout before animating in
-
-      requestAnimationFrame(() => {
-        nextEl.classList.add("on");
-        curEl.classList.remove("on");
-        activeIsA = !activeIsA;
-        onDone();
-      });
-    });
-  }
-
-  function scheduleBannerAdvance(){
-    // Each banner carries its own duration as BANNERS[bannerIndex][1].
-    const seconds = Math.max(BANNERS[bannerIndex][1], MIN_SAFE_SECONDS);
-
-    setTimeout(() => {
-      bannerIndex++;
-      if (bannerIndex < BANNERS.length) {
-        showBannerAt(bannerIndex, scheduleBannerAdvance);
-      } else {
-        bannerOverlay.classList.remove("show");
-        setTimeout(SKIP_SLIDESHOW_FOR_TESTING ? beginBannerTakeover : startSlideshow, 900);
-      }
-    }, seconds * 1000);
-  }
-
-  if (SKIP_SLIDESHOW_FOR_TESTING) {
-    beginBannerTakeover();
-  } else {
-    startSlideshow();
-  }
+  scheduleNext();
 </script>
+
 </body>
 </html>
